@@ -195,23 +195,23 @@ namespace OstBackport.AffinityPatches
             switch (map._difficultyRank)
             {
                 case 1:
-                    map._beatmapData._jsonData = File.ReadAllText(directory + "/EasyStandard.dat");
+                    map._beatmapData._jsonData = File.ReadAllText(directory + "/StandardEasy.dat");
                     map._difficulty = BeatmapDifficulty.Easy;
                     break;
                 case 3:
-                    map._beatmapData._jsonData = File.ReadAllText(directory + "/NormalStandard.dat");
+                    map._beatmapData._jsonData = File.ReadAllText(directory + "/StandardNormal.dat");
                     map._difficulty = BeatmapDifficulty.Normal;
                     break;
                 case 5:
-                    map._beatmapData._jsonData = File.ReadAllText(directory + "/HardStandard.dat");
+                    map._beatmapData._jsonData = File.ReadAllText(directory + "/StandardHard.dat");
                     map._difficulty = BeatmapDifficulty.Hard;
                     break;
                 case 7:
-                    map._beatmapData._jsonData = File.ReadAllText(directory + "/ExpertStandard.dat");
+                    map._beatmapData._jsonData = File.ReadAllText(directory + "/StandardExpert.dat");
                     map._difficulty = BeatmapDifficulty.Expert;
                     break;
                 case 9:
-                    map._beatmapData._jsonData = File.ReadAllText(directory + "/ExpertPlusStandard.dat");
+                    map._beatmapData._jsonData = File.ReadAllText(directory + "/StandardExpertPlus.dat");
                     map._difficulty = BeatmapDifficulty.ExpertPlus;
                     break;
             }
@@ -223,7 +223,7 @@ namespace OstBackport.AffinityPatches
 
             string infoFile = files.FirstOrDefault(fileName => fileName.Contains("Info")) ?? "";
             string songFile = files.FirstOrDefault(fileName => fileName.Contains(".ogg")) ?? "";
-            string coverFile = files.FirstOrDefault(fileName => fileName.Contains(".png")) ?? "";
+            string coverFile = files.FirstOrDefault(fileName => fileName.Contains(".png")) ?? files.FirstOrDefault(fileName => fileName.Contains(".jpg")) ?? "";
 
             string json = File.ReadAllText(infoFile);
             BeatmapLevelSO level = ScriptableObject.CreateInstance<BeatmapLevelSO>();
@@ -232,6 +232,9 @@ namespace OstBackport.AffinityPatches
             level._audioClip = await SongCore.Loader._customLevelLoader._audioClipAsyncLoader._mediaAsyncLoader.LoadAudioClipFromFilePathAsync(songFile);
             level._coverImage = BeatSaberMarkupLanguage.Utilities.LoadSpriteRaw(File.ReadAllBytes(coverFile));
             level._difficultyBeatmapSets[0]._beatmapCharacteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
+            
+            Array.Resize(ref level._difficultyBeatmapSets, 1);
+            
             level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
             level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
 
