@@ -73,6 +73,11 @@
       <SpecificVersion>False</SpecificVersion>
       <Publicize>True</Publicize>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
     <Reference Include="SiraUtil, Version=3.1.2.0, Culture=neutral, processorArchitecture=MSIL">
       <Private>False</Private>
       <HintPath>$(BeatSaberDir)\Plugins\SiraUtil.dll</HintPath>
@@ -156,7 +161,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AffinityPatches\IDPatches.cs" />
+    <Compile Include="AffinityPatches\IdPatches.cs" />
+    <Compile Include="LeaderboardIdAdder.cs" />
     <Compile Include="MapSaving\MapSaving.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Configuration\PluginConfig.cs" />

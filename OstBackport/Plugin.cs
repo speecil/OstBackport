@@ -13,7 +13,13 @@ namespace OstBackport
         {
             zenjector.UseLogger(logger);
             zenjector.UseHttpService();
-            zenjector.Install(Location.App, (container) => { container.BindInterfacesAndSelfTo<MapSaving.MapSaving>().AsSingle(); container.BindInterfacesAndSelfTo<IDPatches>().AsSingle(); });
+            zenjector.Install(Location.App, container =>
+            {
+                container.BindInterfacesAndSelfTo<MapSaving.MapSaving>().AsSingle(); 
+                container.BindInterfacesAndSelfTo<IdPatches>().AsSingle();
+
+                container.BindInterfacesAndSelfTo<LeaderboardIdAdder>().AsSingle();
+            });
             logger.Info("OstBackport initialized.");
         }
     }
