@@ -78,13 +78,13 @@ namespace OstBackport
         {
             if (!_firstStartup) return;
 
-            var ids = UnityEngine.Resources.FindObjectsOfTypeAll<MainSystemInit>().FirstOrDefault()?._steamLeaderboardIdsModel;
+            LeaderboardIdsModelSO ids = UnityEngine.Resources.FindObjectsOfTypeAll<MainSystemInit>().FirstOrDefault()?._steamLeaderboardIdsModel;
 
-            foreach (var kvp in _ost7LeaderboardIds)
+            foreach (KeyValuePair<string, string> kvp in _ost7LeaderboardIds)
             {
                 ids?._leaderboardIds.Add(new LeaderboardIdsModelSO.LeaderboardIdData(kvp.Key, kvp.Value));
             }
-            foreach (var kvp in _ost6LeaderboardIds)
+            foreach (KeyValuePair<string, string> kvp in _ost6LeaderboardIds)
             {
                 ids?._leaderboardIds.Add(new LeaderboardIdsModelSO.LeaderboardIdData(kvp.Key, kvp.Value));
             }

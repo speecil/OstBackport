@@ -15,7 +15,7 @@ namespace OstBackport
             zenjector.UseHttpService();
             zenjector.Install(Location.App, container =>
             {
-                container.BindInterfacesAndSelfTo<MapSaving.MapSaving>().AsSingle(); 
+                container.BindInterfacesAndSelfTo<MapSaving.MapSaving>().AsSingle();
                 container.BindInterfacesAndSelfTo<IdPatches>().AsSingle();
 
                 container.BindInterfacesAndSelfTo<LeaderboardIdAdder>().AsSingle();

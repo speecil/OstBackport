@@ -1,4 +1,6 @@
-﻿using SiraUtil.Affinity;
+﻿using BeatmapSaveDataVersion3;
+using Newtonsoft.Json.Linq;
+using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
 using System.Collections.Generic;
@@ -6,11 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using BeatmapSaveDataVersion3;
-using Newtonsoft.Json.Linq;
 using UnityEngine;
 using Zenject;
-using static LeaderboardIdsModelSO;
 
 namespace OstBackport.AffinityPatches
 {
@@ -47,7 +46,7 @@ namespace OstBackport.AffinityPatches
                 {
                     bool exists = _song.TryGetTarget(out AudioClip target);
                     if (exists) return target;
-                    var loader = SongCore.Loader._customLevelLoader._audioClipAsyncLoader;
+                    AudioClipAsyncLoader loader = SongCore.Loader._customLevelLoader._audioClipAsyncLoader;
                     loader._cache.TryGet(loader.GetCacheKey(_audioClipPath), out Task<AudioClip> result);
                     _song.SetTarget(result.Result);
                     return result.Result;
@@ -91,12 +90,11 @@ namespace OstBackport.AffinityPatches
 
         public static void AddLevelPack(string coverImage, List<BeatmapLevelSO> levelSos, int packNum, LevelFilteringNavigationController controller)
         {
-
-            var levelPack = ScriptableObject.CreateInstance<BeatmapLevelPackSO>();
+            BeatmapLevelPackSO levelPack = ScriptableObject.CreateInstance<BeatmapLevelPackSO>();
             levelPack._packName = "Original Soundtrack Vol. " + packNum;
             levelPack._packID = "OSTVol" + packNum;
             levelPack._shortPackName = "OST" + packNum;
-            var sprite = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly(coverImage);
+            Sprite sprite = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly(coverImage);
             levelPack._coverImage = sprite;
             levelPack._smallCoverImage = sprite;
             BeatmapLevelCollectionSO man = ScriptableObject.CreateInstance<BeatmapLevelCollectionSO>();
@@ -108,9 +106,9 @@ namespace OstBackport.AffinityPatches
             updated.Insert(updated.Count - 2, levelPack);
             controller._ostBeatmapLevelPacks = updated.ToArray();
 
-            var ownedContainer = controller._beatmapLevelsModel._additionalContentModel._alwaysOwnedContentContainer;
+            AlwaysOwnedContentContainerSO ownedContainer = controller._beatmapLevelsModel._additionalContentModel._alwaysOwnedContentContainer;
             ownedContainer.alwaysOwnedPacksIds.Add(levelPack.packID);
-            var beatmapLevelPackSOs = ownedContainer._alwaysOwnedContent._alwaysOwnedPacks.ToList();
+            List<BeatmapLevelPackSO> beatmapLevelPackSOs = ownedContainer._alwaysOwnedContent._alwaysOwnedPacks.ToList();
             beatmapLevelPackSOs.Add(levelPack);
             ownedContainer._alwaysOwnedContent._alwaysOwnedPacks = beatmapLevelPackSOs.ToArray();
         }
@@ -122,8 +120,8 @@ namespace OstBackport.AffinityPatches
             AddLevelPack("OstBackport.Images.OST6.png", _ost6LevelSos, 6, __instance);
             AddLevelPack("OstBackport.Images.OST7.png", _ost7LevelSos, 7, __instance);
 
-            foreach (var level in _ost7LevelSos) __instance._beatmapLevelsModel._loadedPreviewBeatmapLevels[level.levelID] = level;
-            foreach (var level in _ost6LevelSos) __instance._beatmapLevelsModel._loadedPreviewBeatmapLevels[level.levelID] = level;
+            foreach (BeatmapLevelSO level in _ost7LevelSos) __instance._beatmapLevelsModel._loadedPreviewBeatmapLevels[level.levelID] = level;
+            foreach (BeatmapLevelSO level in _ost6LevelSos) __instance._beatmapLevelsModel._loadedPreviewBeatmapLevels[level.levelID] = level;
 
             IBeatmapLevelPack[] allPacks = __instance._ostBeatmapLevelPacks.Concat(__instance._musicPacksBeatmapLevelPacks).ToArray();
 
@@ -133,7 +131,7 @@ namespace OstBackport.AffinityPatches
 
 
             // i hate my life
-            var view = __instance._annotatedBeatmapLevelCollectionsViewController._annotatedBeatmapLevelCollectionsGridView._gridView;
+            GridView view = __instance._annotatedBeatmapLevelCollectionsViewController._annotatedBeatmapLevelCollectionsGridView._gridView;
 
             __instance._selectLevelCategoryViewController.didSelectLevelCategoryEvent += (one, two) =>
             {
@@ -179,7 +177,7 @@ namespace OstBackport.AffinityPatches
 
         private BeatmapLevelSO CreateOstSong(string songDirectory)
         {
-            var files = Directory.GetFiles(songDirectory);
+            string[] files = Directory.GetFiles(songDirectory);
 
             string infoFile = files.FirstOrDefault(fileName => fileName.Contains("Info")) ?? "";
             string songFile = files.FirstOrDefault(fileName => fileName.Contains(".ogg") || fileName.Contains(".wav")) ?? "";
@@ -190,7 +188,7 @@ namespace OstBackport.AffinityPatches
             JsonUtility.FromJsonOverwrite(json, level);
             level._levelID = level.songName.Replace(" ", "").Replace("-", "");
             level._difficultyBeatmapSets[0]._beatmapCharacteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
-            
+
             Array.Resize(ref level._difficultyBeatmapSets, 1);
 
             level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
@@ -199,14 +197,14 @@ namespace OstBackport.AffinityPatches
             level._beatmapLevelData = new CustomOstBeatmapLevelData(songFile, level._difficultyBeatmapSets); // helps get AudioClip from cache
             level.InitCustomOstLevel(songFile, coverFile);
 
-            var infoObj = JObject.Parse(json);
+            JObject infoObj = JObject.Parse(json);
             JArray difficultyBeatmaps = infoObj["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"].Value<JArray>();
-            foreach (var beatmap in difficultyBeatmaps)
+            foreach (JToken beatmap in difficultyBeatmaps)
             {
-                int diff = (beatmap["_difficultyRank"].Value<int>() + 1) / 2 - 1;
+                int diff = ((beatmap["_difficultyRank"].Value<int>() + 1) / 2) - 1;
                 string fileName = beatmap["_beatmapFilename"].Value<string>();
-                var map = level._difficultyBeatmapSets[0]._difficultyBeatmaps[diff];
-                var customBeatmapData = ScriptableObject.CreateInstance<CustomOstBeatmapData>();
+                BeatmapLevelSO.DifficultyBeatmap map = level._difficultyBeatmapSets[0]._difficultyBeatmaps[diff];
+                CustomOstBeatmapData customBeatmapData = ScriptableObject.CreateInstance<CustomOstBeatmapData>();
                 customBeatmapData.JsonDataFilePath = Path.Combine(songDirectory, fileName);
                 map._difficulty = (BeatmapDifficulty)diff;
                 map._beatmapData = customBeatmapData;

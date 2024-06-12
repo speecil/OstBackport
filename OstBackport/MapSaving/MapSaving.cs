@@ -17,7 +17,7 @@ namespace OstBackport.MapSaving
 
         public bool IsReady { get; private set; } = false;
 
-        public Action<int, int> MapSavingCallback; 
+        public Action<int, int> MapSavingCallback;
 
         public bool GetIsReady()
         {
