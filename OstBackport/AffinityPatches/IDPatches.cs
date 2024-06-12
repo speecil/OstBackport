@@ -216,9 +216,16 @@ namespace OstBackport.AffinityPatches
 
         [AffinityPatch(typeof(MainMenuViewController), nameof(MainMenuViewController.DidActivate))]
         [AffinityPostfix]
-        public async void MainSettings(bool firstActivation)
+        public async void MainSettings(bool firstActivation, MainMenuViewController __instance)
         {
             if (!firstActivation) return;
+            _mapSaving.MapSavingCallback += (one, two) => _log.Info($"Maps saved {one} / {two}");
+
+            __instance._soloButton.gameObject.SetActive(false);
+            __instance._partyButton.gameObject.SetActive(false);
+            __instance._campaignButton.gameObject.SetActive(false);
+            __instance._multiplayerButton.gameObject.SetActive(false);
+
             await WaitUntil(() => _mapSaving.GetIsReady());
             string ost7Path = "./UserData/OstBackport/OST7";
             string ost6Path = "./UserData/OstBackport/OST6";
@@ -235,6 +242,10 @@ namespace OstBackport.AffinityPatches
                 _ost6LevelSos.Add(CreateOstSong(directory));
             }
             _log.Notice("Created OST 6");
+            __instance._soloButton.gameObject.SetActive(true);
+            __instance._partyButton.gameObject.SetActive(true);
+            __instance._campaignButton.gameObject.SetActive(true);
+            __instance._multiplayerButton.gameObject.SetActive(true);
         }
 
         public async Task WaitUntil(Func<bool> condition)
