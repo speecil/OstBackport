@@ -1,13 +1,16 @@
 ﻿using BeatmapSaveDataVersion3;
+using BeatSaberMarkupLanguage;
 using Newtonsoft.Json.Linq;
 using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TMPro;
 using UnityEngine;
 using Zenject;
 
@@ -212,17 +215,53 @@ namespace OstBackport.AffinityPatches
             return level;
         }
 
+        internal IEnumerator UpdateProgressText(TextMeshProUGUI text)
+        {
+            text.richText = true;
+            _mapSaving.MapSavingCallback += (one, two) => text.text = $"Downloading OST map {one} / {two}";
+            while (text.gameObject.activeSelf)
+            {
+                text.color = Color.HSVToRGB(Mathf.PingPong(Time.time * 0.1f, 1), 1, 1);
+                yield return new WaitForSeconds(0.05f);
+            }
+            yield break;
+        }
+
         [AffinityPatch(typeof(MainMenuViewController), nameof(MainMenuViewController.DidActivate))]
         [AffinityPostfix]
         public async void MainSettings(bool firstActivation, MainMenuViewController __instance)
         {
             if (!firstActivation) return;
-            _mapSaving.MapSavingCallback += (one, two) => _log.Info($"Maps saved {one} / {two}");
 
-            __instance._soloButton.gameObject.SetActive(false);
-            __instance._partyButton.gameObject.SetActive(false);
-            __instance._campaignButton.gameObject.SetActive(false);
-            __instance._multiplayerButton.gameObject.SetActive(false);
+            TextMeshProUGUI textMeshProUGUI = BeatSaberUI.CreateText(__instance.transform as RectTransform, "Downloading OST maps...", new Vector2(0, 0), new Vector2(0, 0));
+            textMeshProUGUI.gameObject.SetActive(false);
+            textMeshProUGUI.alignment = TextAlignmentOptions.Center;
+            if (_mapSaving.GetTotalMapsToDownload() > 0)
+            {
+                textMeshProUGUI.gameObject.SetActive(true);
+                textMeshProUGUI.fontSize = 7;
+                SharedCoroutineStarter.instance.StartCoroutine(UpdateProgressText(textMeshProUGUI));
+                _mapSaving.MapSavingCallback += (one, two) =>
+                {
+                    _log.Info($"Maps saved {one} / {two}");
+                };
+
+                //__instance._soloButton.gameObject.SetActive(false);
+                //__instance._partyButton.gameObject.SetActive(false);
+                //__instance._campaignButton.gameObject.SetActive(false);
+                //__instance._multiplayerButton.gameObject.SetActive(false);
+                __instance._soloButton.interactable = false;
+                __instance._partyButton.interactable = false;
+                __instance._campaignButton.interactable = false;
+                __instance._multiplayerButton.interactable = false;
+                __instance._musicPackPromoButton.interactable = false;
+
+                __instance._howToPlayButton.gameObject.SetActive(false);
+                __instance._beatmapEditorButton.gameObject.SetActive(false);
+                __instance._optionsButton.gameObject.SetActive(false);
+                __instance._quitButton.gameObject.SetActive(false);
+
+            }
 
             await WaitUntil(() => _mapSaving.GetIsReady());
             string ost7Path = "./UserData/OstBackport/OST7";
@@ -240,10 +279,23 @@ namespace OstBackport.AffinityPatches
                 _ost6LevelSos.Add(CreateOstSong(directory));
             }
             _log.Notice("Created OST 6");
-            __instance._soloButton.gameObject.SetActive(true);
-            __instance._partyButton.gameObject.SetActive(true);
-            __instance._campaignButton.gameObject.SetActive(true);
-            __instance._multiplayerButton.gameObject.SetActive(true);
+            textMeshProUGUI.gameObject.SetActive(false);
+
+            //__instance._soloButton.gameObject.SetActive(true);
+            //__instance._partyButton.gameObject.SetActive(true);
+            //__instance._campaignButton.gameObject.SetActive(true);
+            //__instance._multiplayerButton.gameObject.SetActive(true);
+
+            __instance._soloButton.interactable = true;
+            __instance._partyButton.interactable = true;
+            __instance._campaignButton.interactable = true;
+            __instance._multiplayerButton.interactable = true;
+            __instance._musicPackPromoButton.interactable = true;
+
+            __instance._howToPlayButton.gameObject.SetActive(true);
+            __instance._beatmapEditorButton.gameObject.SetActive(true);
+            __instance._optionsButton.gameObject.SetActive(true);
+            __instance._quitButton.gameObject.SetActive(true);
         }
 
         public async Task WaitUntil(Func<bool> condition)
