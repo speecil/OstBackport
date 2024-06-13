@@ -41,11 +41,12 @@ namespace OstBackport.Services
             level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
 
             UnityEngine.Object.Destroy(level2); // bruh i could've just read the json again but no.
+            _log.Notice($"Loaded custom ost preview \"{level.songName}\"");
         }
 
         public async Task<LoadBeatmapLevelResult> LoadCustomOstBeatmapLevelAsync(CustomOstPreviewBeatmapLevel previewLevel, CancellationToken cancellationToken)
         {
-            _log.Info("now here we can load our custom ost level proper dynamically innit");
+            _log.Notice($"Loading custom ost map \"{previewLevel.songName}\"");
 
             string infoFile = previewLevel.InfoDatPath;
             string songFile = previewLevel.songAudioClipPath;
@@ -78,8 +79,8 @@ namespace OstBackport.Services
                 await customBeatmapData.GetBeatmapDataBasicInfoAsync();
                 map._difficulty = (BeatmapDifficulty)diff;
                 map._beatmapData = customBeatmapData;
+                cancellationToken.ThrowIfCancellationRequested();
             }
-            cancellationToken.ThrowIfCancellationRequested();
             return new LoadBeatmapLevelResult(false, level); // placeholder
         }
     }

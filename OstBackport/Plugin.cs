@@ -10,11 +10,9 @@ namespace OstBackport
     [Plugin(RuntimeOptions.SingleStartInit), NoEnableDisable]
     public class Plugin
     {
-        public static IPALogger Log { get; set; } 
         [Init]
         public Plugin(IPALogger logger, Zenjector zenjector)
         {
-            Log = logger;
             zenjector.UseLogger(logger);
             zenjector.UseHttpService();
             zenjector.Install(Location.App, container =>

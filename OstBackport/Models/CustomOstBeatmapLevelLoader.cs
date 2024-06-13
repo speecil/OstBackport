@@ -1,7 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using OstBackport.Services;
-using SiraUtil.Logging;
 using Zenject;
 
 namespace OstBackport.Models
