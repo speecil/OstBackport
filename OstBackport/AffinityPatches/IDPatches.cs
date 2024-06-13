@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using OstBackport.Services;
 using TMPro;
@@ -23,15 +22,13 @@ namespace OstBackport.AffinityPatches
         [Inject] private readonly SiraLog _log;
         [Inject] private readonly CustomOstLevelService _customOstLevelService;
 
-        
-
         public static void AddLevelPack(string coverImage, List<string> levelIds, int packNum, LevelFilteringNavigationController controller)
         {
             PreviewBeatmapLevelPackSO levelPack = ScriptableObject.CreateInstance<PreviewBeatmapLevelPackSO>();
             levelPack._packName = "Original Soundtrack Vol. " + packNum;
             levelPack._packID = "OSTVol" + packNum;
             levelPack._shortPackName = "OST" + packNum;
-            Sprite sprite = BeatSaberMarkupLanguage.Utilities.FindSpriteInAssembly(coverImage);
+            Sprite sprite = Utilities.FindSpriteInAssembly(coverImage);
             levelPack._coverImage = sprite;
             levelPack._smallCoverImage = sprite;
             PreviewBeatmapLevelCollectionSO man = ScriptableObject.CreateInstance<PreviewBeatmapLevelCollectionSO>();

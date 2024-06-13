@@ -26,11 +26,21 @@ namespace OstBackport.Services
             string coverFile = files.FirstOrDefault(fileName => fileName.Contains(".png") || fileName.Contains(".jpg")) ?? "";
 
             string json = File.ReadAllText(infoFile);
-            CustomOstPreviewBeatmapLevel level = ScriptableObject.CreateInstance<CustomOstPreviewBeatmapLevel>(); // helps with dynamic cover/audio loading
+            CustomOstPreviewBeatmapLevel level = ScriptableObject.CreateInstance<CustomOstPreviewBeatmapLevel>();
             JsonUtility.FromJsonOverwrite(json, level);
             level._levelID = level.songName.Replace(" ", "").Replace("-", "");
             level.InitCustomOstPreviewLevel(songFile, coverFile, infoFile);
             _levelsModel._loadedPreviewBeatmapLevels[level._levelID] = level;
+
+            CustomOstBeatmapLevel level2 = ScriptableObject.CreateInstance<CustomOstBeatmapLevel>(); // forgive me for i am lazy lmao
+            JsonUtility.FromJsonOverwrite(json, level2);
+            var charac = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
+            level._previewDifficultyBeatmapSets = new PreviewDifficultyBeatmapSet[1];
+            level._previewDifficultyBeatmapSets[0] = new PreviewDifficultyBeatmapSet(charac, level2._difficultyBeatmapSets[0]._difficultyBeatmaps.Select(map => (BeatmapDifficulty)((map._difficultyRank + 1) / 2) - 1).ToArray());
+            level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
+            level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
+
+            UnityEngine.Object.Destroy(level2); // bruh i could've just read the json again but no.
         }
 
         public async Task<LoadBeatmapLevelResult> LoadCustomOstBeatmapLevelAsync(CustomOstPreviewBeatmapLevel previewLevel, CancellationToken cancellationToken)
