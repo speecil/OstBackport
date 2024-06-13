@@ -69,6 +69,7 @@ namespace OstBackport.Services
                 map._difficulty = (BeatmapDifficulty)diff;
                 map._beatmapData = customBeatmapData;
             }
+            cancellationToken.ThrowIfCancellationRequested();
             return new LoadBeatmapLevelResult(false, level); // placeholder
         }
     }

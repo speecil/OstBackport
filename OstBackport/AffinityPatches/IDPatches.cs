@@ -11,6 +11,9 @@ using OstBackport.Services;
 using TMPro;
 using UnityEngine;
 using Zenject;
+using OstBackport.Models;
+using Newtonsoft.Json.Linq;
+using BeatSaberMarkupLanguage;
 
 namespace OstBackport.AffinityPatches
 {
