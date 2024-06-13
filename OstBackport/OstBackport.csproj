@@ -101,6 +101,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="HMLib">
+      <Publicize>True</Publicize>
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\HMLib.dll</HintPath>
       <Private>False</Private>
     </Reference>
@@ -164,9 +165,15 @@
     <Compile Include="AffinityPatches\IdPatches.cs" />
     <Compile Include="LeaderboardIdAdder.cs" />
     <Compile Include="MapSaving\MapSaving.cs" />
+    <Compile Include="Models\CustomOstBeatmapData.cs" />
+    <Compile Include="Models\CustomOstBeatmapLevel.cs" />
+    <Compile Include="Models\CustomOstBeatmapLevelData.cs" />
+    <Compile Include="Models\CustomOstBeatmapLevelLoader.cs" />
+    <Compile Include="Models\CustomOstPreviewBeatmapLevel.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Configuration\PluginConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\CustomOstLevelService.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="manifest.json" />
@@ -193,5 +200,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Images\OST6.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
