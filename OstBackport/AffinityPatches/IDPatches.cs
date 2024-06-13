@@ -10,8 +10,6 @@ using OstBackport.Services;
 using TMPro;
 using UnityEngine;
 using Zenject;
-using OstBackport.Models;
-using Newtonsoft.Json.Linq;
 using BeatSaberMarkupLanguage;
 
 namespace OstBackport.AffinityPatches
@@ -22,26 +20,32 @@ namespace OstBackport.AffinityPatches
         [Inject] private readonly SiraLog _log;
         [Inject] private readonly CustomOstLevelService _customOstLevelService;
 
-        public static void AddLevelPack(string coverImage, List<string> levelIds, int packNum, LevelFilteringNavigationController controller)
-        {
-            PreviewBeatmapLevelPackSO levelPack = ScriptableObject.CreateInstance<PreviewBeatmapLevelPackSO>();
-            levelPack._packName = "Original Soundtrack Vol. " + packNum;
-            levelPack._packID = "OSTVol" + packNum;
-            levelPack._shortPackName = "OST" + packNum;
-            Sprite sprite = Utilities.FindSpriteInAssembly(coverImage);
-            levelPack._coverImage = sprite;
-            levelPack._smallCoverImage = sprite;
-            PreviewBeatmapLevelCollectionSO man = ScriptableObject.CreateInstance<PreviewBeatmapLevelCollectionSO>();
-            PreviewBeatmapLevelSO[] levels = levelIds.Select(id => controller._beatmapLevelsModel._loadedPreviewBeatmapLevels[id] as PreviewBeatmapLevelSO).ToArray();
-            man._beatmapLevels = levels;
-            levelPack._previewBeatmapLevelCollection = man;
+        private readonly PreviewBeatmapLevelPackSO[] _customOstPacks = new PreviewBeatmapLevelPackSO[2];
 
+        public void AddLevelPack(string coverImage, List<string> levelIds, int packNum, LevelFilteringNavigationController controller)
+        {
+            PreviewBeatmapLevelPackSO customLevelPack = _customOstPacks[packNum - 6];
+            if (customLevelPack == null)
+            {
+                customLevelPack = _customOstPacks[packNum - 6] = ScriptableObject.CreateInstance<PreviewBeatmapLevelPackSO>();
+                customLevelPack._packName = "Original Soundtrack Vol. " + packNum;
+                customLevelPack._packID = "OSTVol" + packNum;
+                customLevelPack._shortPackName = "OST" + packNum;
+                Sprite sprite = Utilities.FindSpriteInAssembly(coverImage);
+                customLevelPack._coverImage = sprite;
+                customLevelPack._smallCoverImage = sprite;
+                PreviewBeatmapLevelCollectionSO man = ScriptableObject.CreateInstance<PreviewBeatmapLevelCollectionSO>();
+                PreviewBeatmapLevelSO[] levels = levelIds.Select(id => controller._beatmapLevelsModel._loadedPreviewBeatmapLevels[id] as PreviewBeatmapLevelSO).ToArray();
+                man._beatmapLevels = levels;
+                customLevelPack._previewBeatmapLevelCollection = man;
+            }
+            
             List<IBeatmapLevelPack> updated = controller._ostBeatmapLevelPacks.ToList();
-            updated.Insert(updated.Count - 2, levelPack);
+            updated.Insert(updated.Count - 2, customLevelPack);
             controller._ostBeatmapLevelPacks = updated.ToArray();
 
             AlwaysOwnedContentContainerSO ownedContent = controller._beatmapLevelsModel._additionalContentModel._alwaysOwnedContentContainer;
-            ownedContent._alwaysOwnedPacksIds.Add(levelPack._packID);
+            ownedContent._alwaysOwnedPacksIds.Add(customLevelPack._packID);
             levelIds.ForEach(id => ownedContent._alwaysOwnedBeatmapLevelIds.Add(id));
         }
 
@@ -98,43 +102,6 @@ namespace OstBackport.AffinityPatches
             ////content.localPosition = new Vector2(three[3], content.localPosition.y);
 
             //view.ReloadData();
-        }
-
-        private BeatmapLevelSO CreateOstSong(string songDirectory)
-        {
-            string[] files = Directory.GetFiles(songDirectory);
-
-            string infoFile = files.FirstOrDefault(fileName => fileName.Contains("Info")) ?? "";
-            string songFile = files.FirstOrDefault(fileName => fileName.Contains(".ogg") || fileName.Contains(".wav")) ?? "";
-            string coverFile = files.FirstOrDefault(fileName => fileName.Contains(".png") || fileName.Contains(".jpg")) ?? "";
-
-            string json = File.ReadAllText(infoFile);
-            CustomOstBeatmapLevel level = ScriptableObject.CreateInstance<CustomOstBeatmapLevel>(); // helps with dynamic cover/audio loading
-            JsonUtility.FromJsonOverwrite(json, level);
-            level._levelID = level.songName.Replace(" ", "").Replace("-", "");
-            level._difficultyBeatmapSets[0]._beatmapCharacteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
-
-            Array.Resize(ref level._difficultyBeatmapSets, 1);
-
-            level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
-            level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
-            level.InitData();
-            level._beatmapLevelData = new CustomOstBeatmapLevelData(songFile, level._difficultyBeatmapSets); // helps get AudioClip from cache
-            level.InitCustomOstLevel(songFile, coverFile);
-
-            JObject infoObj = JObject.Parse(json);
-            JArray difficultyBeatmaps = infoObj["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"].Value<JArray>();
-            foreach (JToken beatmap in difficultyBeatmaps)
-            {
-                int diff = ((beatmap["_difficultyRank"].Value<int>() + 1) / 2) - 1;
-                string fileName = beatmap["_beatmapFilename"].Value<string>();
-                BeatmapLevelSO.DifficultyBeatmap map = level._difficultyBeatmapSets[0]._difficultyBeatmaps[diff];
-                CustomOstBeatmapData customBeatmapData = ScriptableObject.CreateInstance<CustomOstBeatmapData>();
-                customBeatmapData.JsonDataFilePath = Path.Combine(songDirectory, fileName);
-                map._difficulty = (BeatmapDifficulty)diff;
-                map._beatmapData = customBeatmapData;
-            }
-            return level;
         }
 
         internal IEnumerator UpdateProgressText(TextMeshProUGUI text)

@@ -15,9 +15,9 @@ namespace OstBackport.Models
 
         public override async Task<LoadBeatmapLevelResult> LoadBeatmapLevelAsync(IPreviewBeatmapLevel previewLevel, CancellationToken cancellationToken)
         {
-            CustomOstPreviewBeatmapLevel customOstPreviewBeatmapLevel = previewLevel as CustomOstPreviewBeatmapLevel;
-            if (customOstPreviewBeatmapLevel == null) return await base.LoadBeatmapLevelAsync(previewLevel, cancellationToken);
-            return await _ostLevelService.LoadCustomOstBeatmapLevelAsync(customOstPreviewBeatmapLevel, cancellationToken);
+            CustomOstPreviewBeatmapLevelSO customOstPreviewBeatmapLevelSo = previewLevel as CustomOstPreviewBeatmapLevelSO;
+            if (customOstPreviewBeatmapLevelSo == null) return await base.LoadBeatmapLevelAsync(previewLevel, cancellationToken);
+            return await _ostLevelService.LoadCustomOstBeatmapLevelAsync(customOstPreviewBeatmapLevelSo, cancellationToken);
         }
     }
 }

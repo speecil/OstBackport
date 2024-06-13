@@ -167,9 +167,10 @@
     <Compile Include="MapSaving\MapSaving.cs" />
     <Compile Include="Models\CustomOstBeatmapData.cs" />
     <Compile Include="Models\CustomOstBeatmapLevel.cs" />
-    <Compile Include="Models\CustomOstBeatmapLevelData.cs" />
     <Compile Include="Models\CustomOstBeatmapLevelLoader.cs" />
-    <Compile Include="Models\CustomOstPreviewBeatmapLevel.cs" />
+    <Compile Include="Models\CustomOstDifficultyBeatmap.cs" />
+    <Compile Include="Models\CustomOstDifficultyBeatmapSet.cs" />
+    <Compile Include="Models\CustomOstPreviewBeatmapLevelSO.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Configuration\PluginConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

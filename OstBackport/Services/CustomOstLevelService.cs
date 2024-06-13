@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using OstBackport.Models;
 using System.Threading.Tasks;
 using Zenject;
@@ -6,6 +6,7 @@ using static BeatmapLevelLoader;
 using System.IO;
 using System.Linq;
 using System;
+using Newtonsoft.Json;
 using SiraUtil.Logging;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
@@ -26,62 +27,49 @@ namespace OstBackport.Services
             string coverFile = files.FirstOrDefault(fileName => fileName.Contains(".png") || fileName.Contains(".jpg")) ?? "";
 
             string json = File.ReadAllText(infoFile);
-            CustomOstPreviewBeatmapLevel level = ScriptableObject.CreateInstance<CustomOstPreviewBeatmapLevel>();
-            JsonUtility.FromJsonOverwrite(json, level);
-            level._levelID = level.songName.Replace(" ", "").Replace("-", "");
-            level.InitCustomOstPreviewLevel(songFile, coverFile, infoFile);
-            _levelsModel._loadedPreviewBeatmapLevels[level._levelID] = level;
+            CustomOstPreviewBeatmapLevelSO levelSo = ScriptableObject.CreateInstance<CustomOstPreviewBeatmapLevelSO>();
+            JsonUtility.FromJsonOverwrite(json, levelSo);
 
-            CustomOstBeatmapLevel level2 = ScriptableObject.CreateInstance<CustomOstBeatmapLevel>(); // forgive me for i am lazy lmao
-            JsonUtility.FromJsonOverwrite(json, level2);
-            var charac = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
-            level._previewDifficultyBeatmapSets = new PreviewDifficultyBeatmapSet[1];
-            level._previewDifficultyBeatmapSets[0] = new PreviewDifficultyBeatmapSet(charac, level2._difficultyBeatmapSets[0]._difficultyBeatmaps.Select(map => (BeatmapDifficulty)((map._difficultyRank + 1) / 2) - 1).ToArray());
-            level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
-            level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
+            JArray difficultyBeatmapSets = JObject.Parse(json)["_difficultyBeatmapSets"].Value<JArray>();
+            CustomOstDifficultyBeatmapSet[] maps = JsonConvert.DeserializeObject<CustomOstDifficultyBeatmapSet[]>(difficultyBeatmapSets.ToString());
 
-            UnityEngine.Object.Destroy(level2); // bruh i could've just read the json again but no.
-            _log.Notice($"Loaded custom ost preview \"{level.songName}\"");
+            levelSo._levelID = levelSo.songName.Replace(" ", "").Replace("-", "");
+            levelSo._previewDifficultyBeatmapSets = new PreviewDifficultyBeatmapSet[1];
+            levelSo._previewDifficultyBeatmapSets[0] = new PreviewDifficultyBeatmapSet(maps[0].beatmapCharacteristic, maps[0].beatmaps.Select(map => map.difficulty).ToArray());
+            levelSo._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
+            levelSo._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
+            levelSo.InitCustomOstPreviewLevel(songFile, coverFile, infoFile);
+
+            _levelsModel._loadedPreviewBeatmapLevels[levelSo._levelID] = levelSo;
+
+            _log.Notice($"Loaded custom ost preview \"{levelSo.songName}\"");
         }
 
-        public async Task<LoadBeatmapLevelResult> LoadCustomOstBeatmapLevelAsync(CustomOstPreviewBeatmapLevel previewLevel, CancellationToken cancellationToken)
+        public async Task<LoadBeatmapLevelResult> LoadCustomOstBeatmapLevelAsync(CustomOstPreviewBeatmapLevelSO previewLevel, CancellationToken cancellationToken)
         {
             _log.Notice($"Loading custom ost map \"{previewLevel.songName}\"");
 
             string infoFile = previewLevel.InfoDatPath;
-            string songFile = previewLevel.songAudioClipPath;
-            string coverFile = previewLevel.CoverImagePath;
             string songDirectory = Path.GetDirectoryName(infoFile) ?? "";
 
             string json = File.ReadAllText(infoFile);
-            CustomOstBeatmapLevel level = ScriptableObject.CreateInstance<CustomOstBeatmapLevel>(); // helps with dynamic cover/audio loading
-            JsonUtility.FromJsonOverwrite(json, level);
-            level._levelID = level.songName.Replace(" ", "").Replace("-", "");
-            level._difficultyBeatmapSets[0]._beatmapCharacteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
-
-            Array.Resize(ref level._difficultyBeatmapSets, 1);
-
-            level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
-            level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
-            level.InitData();
-            level._beatmapLevelData = new CustomOstBeatmapLevelData(songFile, level._difficultyBeatmapSets); // helps get AudioClip from cache
-            level.InitCustomOstLevel(songFile, coverFile);
-
             JObject infoObj = JObject.Parse(json);
-            JArray difficultyBeatmaps = infoObj["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"].Value<JArray>();
-            foreach (JToken beatmap in difficultyBeatmaps)
+
+            JArray difficultyBeatmapSets = infoObj["_difficultyBeatmapSets"].Value<JArray>();
+            CustomOstDifficultyBeatmapSet[] maps = JsonConvert.DeserializeObject<CustomOstDifficultyBeatmapSet[]>(difficultyBeatmapSets.ToString());
+
+            foreach (CustomOstDifficultyBeatmap beatmap in maps[0].beatmaps)
             {
-                int diff = ((beatmap["_difficultyRank"].Value<int>() + 1) / 2) - 1;
-                string fileName = beatmap["_beatmapFilename"].Value<string>();
-                BeatmapLevelSO.DifficultyBeatmap map = level._difficultyBeatmapSets[0]._difficultyBeatmaps[diff];
-                CustomOstBeatmapData customBeatmapData = ScriptableObject.CreateInstance<CustomOstBeatmapData>();
-                customBeatmapData.JsonDataFilePath = Path.Combine(songDirectory, fileName);
+                CustomOstBeatmapData customBeatmapData = new CustomOstBeatmapData(Path.Combine(songDirectory, beatmap.BeatmapFilename));
                 await customBeatmapData.GetBeatmapDataBasicInfoAsync();
-                map._difficulty = (BeatmapDifficulty)diff;
-                map._beatmapData = customBeatmapData;
+                beatmap.BeatmapData = customBeatmapData;
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            return new LoadBeatmapLevelResult(false, level); // placeholder
+            Array.Resize(ref maps, 1);
+            AudioClip song = await SongCore.Loader._customLevelLoader._audioClipAsyncLoader.LoadPreview(previewLevel);
+            CustomOstBeatmapLevel level = new CustomOstBeatmapLevel(previewLevel, song, maps);
+            level.InitData();
+            return new LoadBeatmapLevelResult(false, level);
         }
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace OstBackport.Models
 {
-    internal class CustomOstPreviewBeatmapLevel : PreviewBeatmapLevelSO, IPreviewBeatmapLevel, IFilePathSongAudioClipProvider, IFilePathSongPreviewAudioClipProvider
+    internal class CustomOstPreviewBeatmapLevelSO : PreviewBeatmapLevelSO, IPreviewBeatmapLevel, IFilePathSongAudioClipProvider, IFilePathSongPreviewAudioClipProvider
     {
         public ISpriteAsyncLoader SpriteAsyncLoader { get; private set; }
 
@@ -30,6 +30,7 @@ namespace OstBackport.Models
             songAudioClipPath = songAudioPath;
             songDuration = SongCore.Loader.GetLengthFromOgg(songAudioPath);
             InfoDatPath = infoDatPath;
+            InitData();
         }
     }
 }
