@@ -1,11 +1,14 @@
 ﻿using SiraUtil.Affinity;
 using SiraUtil.Logging;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using OstBackport.Services;
+using TMPro;
 using UnityEngine;
 using Zenject;
 
@@ -97,17 +100,90 @@ namespace OstBackport.AffinityPatches
             //view.ReloadData();
         }
 
+        private BeatmapLevelSO CreateOstSong(string songDirectory)
+        {
+            string[] files = Directory.GetFiles(songDirectory);
+
+            string infoFile = files.FirstOrDefault(fileName => fileName.Contains("Info")) ?? "";
+            string songFile = files.FirstOrDefault(fileName => fileName.Contains(".ogg") || fileName.Contains(".wav")) ?? "";
+            string coverFile = files.FirstOrDefault(fileName => fileName.Contains(".png") || fileName.Contains(".jpg")) ?? "";
+
+            string json = File.ReadAllText(infoFile);
+            CustomOstBeatmapLevel level = ScriptableObject.CreateInstance<CustomOstBeatmapLevel>(); // helps with dynamic cover/audio loading
+            JsonUtility.FromJsonOverwrite(json, level);
+            level._levelID = level.songName.Replace(" ", "").Replace("-", "");
+            level._difficultyBeatmapSets[0]._beatmapCharacteristic = SongCore.Loader.beatmapCharacteristicCollection.GetBeatmapCharacteristicBySerializedName("Standard");
+
+            Array.Resize(ref level._difficultyBeatmapSets, 1);
+
+            level._environmentInfo = SongCore.Loader._customLevelLoader._defaultEnvironmentInfo;
+            level._allDirectionsEnvironmentInfo = SongCore.Loader._customLevelLoader._defaultAllDirectionsEnvironmentInfo;
+            level.InitData();
+            level._beatmapLevelData = new CustomOstBeatmapLevelData(songFile, level._difficultyBeatmapSets); // helps get AudioClip from cache
+            level.InitCustomOstLevel(songFile, coverFile);
+
+            JObject infoObj = JObject.Parse(json);
+            JArray difficultyBeatmaps = infoObj["_difficultyBeatmapSets"][0]["_difficultyBeatmaps"].Value<JArray>();
+            foreach (JToken beatmap in difficultyBeatmaps)
+            {
+                int diff = ((beatmap["_difficultyRank"].Value<int>() + 1) / 2) - 1;
+                string fileName = beatmap["_beatmapFilename"].Value<string>();
+                BeatmapLevelSO.DifficultyBeatmap map = level._difficultyBeatmapSets[0]._difficultyBeatmaps[diff];
+                CustomOstBeatmapData customBeatmapData = ScriptableObject.CreateInstance<CustomOstBeatmapData>();
+                customBeatmapData.JsonDataFilePath = Path.Combine(songDirectory, fileName);
+                map._difficulty = (BeatmapDifficulty)diff;
+                map._beatmapData = customBeatmapData;
+            }
+            return level;
+        }
+
+        internal IEnumerator UpdateProgressText(TextMeshProUGUI text)
+        {
+            text.richText = true;
+            _mapSaving.MapSavingCallback += (one, two) => text.text = $"Downloading OST map {one} / {two}";
+            while (text.gameObject.activeSelf)
+            {
+                text.color = Color.HSVToRGB(Mathf.PingPong(Time.time * 0.1f, 1), 1, 1);
+                yield return new WaitForSeconds(0.05f);
+            }
+            yield break;
+        }
+
         [AffinityPatch(typeof(MainMenuViewController), nameof(MainMenuViewController.DidActivate))]
         [AffinityPostfix]
         public async void MainSettings(bool firstActivation, MainMenuViewController __instance)
         {
             if (!firstActivation) return;
-            _mapSaving.MapSavingCallback += (one, two) => _log.Info($"Maps saved {one} / {two}");
 
-            __instance._soloButton.gameObject.SetActive(false);
-            __instance._partyButton.gameObject.SetActive(false);
-            __instance._campaignButton.gameObject.SetActive(false);
-            __instance._multiplayerButton.gameObject.SetActive(false);
+            TextMeshProUGUI textMeshProUGUI = BeatSaberUI.CreateText(__instance.transform as RectTransform, "Downloading OST maps...", new Vector2(0, 0), new Vector2(0, 0));
+            textMeshProUGUI.gameObject.SetActive(false);
+            textMeshProUGUI.alignment = TextAlignmentOptions.Center;
+            if (_mapSaving.GetTotalMapsToDownload() > 0)
+            {
+                textMeshProUGUI.gameObject.SetActive(true);
+                textMeshProUGUI.fontSize = 7;
+                SharedCoroutineStarter.instance.StartCoroutine(UpdateProgressText(textMeshProUGUI));
+                _mapSaving.MapSavingCallback += (one, two) =>
+                {
+                    _log.Info($"Maps saved {one} / {two}");
+                };
+
+                //__instance._soloButton.gameObject.SetActive(false);
+                //__instance._partyButton.gameObject.SetActive(false);
+                //__instance._campaignButton.gameObject.SetActive(false);
+                //__instance._multiplayerButton.gameObject.SetActive(false);
+                __instance._soloButton.interactable = false;
+                __instance._partyButton.interactable = false;
+                __instance._campaignButton.interactable = false;
+                __instance._multiplayerButton.interactable = false;
+                __instance._musicPackPromoButton.interactable = false;
+
+                __instance._howToPlayButton.gameObject.SetActive(false);
+                __instance._beatmapEditorButton.gameObject.SetActive(false);
+                __instance._optionsButton.gameObject.SetActive(false);
+                __instance._quitButton.gameObject.SetActive(false);
+
+            }
 
             await WaitUntil(() => _mapSaving.GetIsReady());
             string ost7Path = "./UserData/OstBackport/OST7";
@@ -116,21 +192,32 @@ namespace OstBackport.AffinityPatches
             string[] ost7dir = Directory.GetDirectories(ost7Path);
             foreach (string directory in ost7dir)
             {
-                //_ost7LevelSos.Add(CreateOstSong(directory));
                 _customOstLevelService.LoadCustomOstPreviewBeatmapLevel(directory);
             }
             _log.Notice("Created OST 7");
             string[] ost6dir = Directory.GetDirectories(ost6Path);
             foreach (string directory in ost6dir)
             {
-                //_ost6LevelSos.Add(CreateOstSong(directory));
                 _customOstLevelService.LoadCustomOstPreviewBeatmapLevel(directory);
             }
             _log.Notice("Created OST 6");
-            __instance._soloButton.gameObject.SetActive(true);
-            __instance._partyButton.gameObject.SetActive(true);
-            __instance._campaignButton.gameObject.SetActive(true);
-            __instance._multiplayerButton.gameObject.SetActive(true);
+            textMeshProUGUI.gameObject.SetActive(false);
+
+            //__instance._soloButton.gameObject.SetActive(true);
+            //__instance._partyButton.gameObject.SetActive(true);
+            //__instance._campaignButton.gameObject.SetActive(true);
+            //__instance._multiplayerButton.gameObject.SetActive(true);
+
+            __instance._soloButton.interactable = true;
+            __instance._partyButton.interactable = true;
+            __instance._campaignButton.interactable = true;
+            __instance._multiplayerButton.interactable = true;
+            __instance._musicPackPromoButton.interactable = true;
+
+            __instance._howToPlayButton.gameObject.SetActive(true);
+            __instance._beatmapEditorButton.gameObject.SetActive(true);
+            __instance._optionsButton.gameObject.SetActive(true);
+            __instance._quitButton.gameObject.SetActive(true);
         }
 
         public async Task WaitUntil(Func<bool> condition)
