@@ -162,7 +162,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AffinityPatches\IdPatches.cs" />
+    <Compile Include="AffinityPatches\OSTPatches.cs" />
     <Compile Include="LeaderboardIdAdder.cs" />
     <Compile Include="MapSaving\MapSaving.cs" />
     <Compile Include="Models\CustomOstBeatmapData.cs" />

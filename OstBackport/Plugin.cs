@@ -23,7 +23,7 @@ namespace OstBackport
 
             zenjector.Install(Location.Menu, container =>
             {
-                container.BindInterfacesAndSelfTo<IdPatches>().AsSingle();
+                container.BindInterfacesAndSelfTo<OSTPatches>().AsSingle();
                 var model = container.Resolve<BeatmapLevelsModel>();
                 var customLoader = new CustomOstBeatmapLevelLoader(model._beatmapLevelDataLoader, model._beatmapDataAssetFileModel);
                 container.BindInstance(customLoader);

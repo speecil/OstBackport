@@ -14,7 +14,7 @@ using BeatSaberMarkupLanguage;
 
 namespace OstBackport.AffinityPatches
 {
-    internal class IdPatches : IAffinity
+    internal class OSTPatches : IAffinity
     {
         [Inject] private readonly MapSaving.MapSaving _mapSaving;
         [Inject] private readonly SiraLog _log;
