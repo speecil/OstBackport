@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
+﻿using System.IO;
 using System.Threading.Tasks;
 using BeatmapSaveDataVersion3;
-using UnityEngine;
 
 namespace OstBackport.Models
 {
@@ -16,7 +13,7 @@ namespace OstBackport.Models
         {
             if (_beatmapDataBasicInfo != null) return _beatmapDataBasicInfo;
             BeatmapSaveData beatmapSaveData = await LoadBeatmapSaveDataAsync();
-            await RunTaskAndLogException(() => _beatmapDataBasicInfo = BeatmapDataLoader.GetBeatmapDataBasicInfoFromSaveData(beatmapSaveData));
+            await Task.Run(() => _beatmapDataBasicInfo = BeatmapDataLoader.GetBeatmapDataBasicInfoFromSaveData(beatmapSaveData));
             return _beatmapDataBasicInfo;
         }
 
@@ -24,32 +21,19 @@ namespace OstBackport.Models
         {
             BeatmapSaveData beatmapSaveData = await LoadBeatmapSaveDataAsync();
             IReadonlyBeatmapData readonlyBeatmapData = null;
-            await RunTaskAndLogException(() => readonlyBeatmapData = BeatmapDataLoader.GetBeatmapDataFromSaveData(beatmapSaveData, beatmapDifficulty, beatsPerMinute, loadingForDesignatedEnvironment, environmentInfo, playerSpecificSettings));
+            await Task.Run(() => readonlyBeatmapData = BeatmapDataLoader.GetBeatmapDataFromSaveData(beatmapSaveData, beatmapDifficulty, beatsPerMinute, loadingForDesignatedEnvironment, environmentInfo, playerSpecificSettings));
             return readonlyBeatmapData;
         }
 
         public async Task<BeatmapSaveData> LoadBeatmapSaveDataAsync()
         {
+            string jsonData = File.ReadAllText(JsonDataFilePath);
             BeatmapSaveData beatmapSaveData = null;
-            await RunTaskAndLogException(() => beatmapSaveData = BeatmapSaveData.DeserializeFromJSONString(File.ReadAllText(JsonDataFilePath)));
+            await Task.Run(() => beatmapSaveData = BeatmapSaveData.DeserializeFromJSONString(jsonData));
             return beatmapSaveData;
         }
 
-        public async Task RunTaskAndLogException(Action action) => await Task.Run(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        });
-
-        public CustomOstBeatmapData(string filePath)
-        {
-            JsonDataFilePath = filePath;
-        }
+        public CustomOstBeatmapData(string filePath) => JsonDataFilePath = filePath;
+        
     }
 }

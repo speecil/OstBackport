@@ -30,7 +30,7 @@ namespace OstBackport.Models
         public string CoverImagePath { get; }
         public BeatmapLevelData CustomBeatmapLevelData { get; }
 
-        private readonly CustomOstDifficultyBeatmapSet[] _difficultyBeatmapSets;
+        private readonly List<CustomOstDifficultyBeatmapSet> _difficultyBeatmapSets;
 
         public async Task<Sprite> GetCoverImageAsync(CancellationToken cancellationToken)
         {
@@ -42,7 +42,7 @@ namespace OstBackport.Models
             foreach (var mapSet in _difficultyBeatmapSets) mapSet.SetParentLevel(this);
         }
 
-        public CustomOstBeatmapLevel(CustomOstPreviewBeatmapLevelSO previewLevel, AudioClip song, CustomOstDifficultyBeatmapSet[] difficultyBeatmapSets)
+        public CustomOstBeatmapLevel(CustomOstPreviewBeatmapLevelSO previewLevel, AudioClip song, List<CustomOstDifficultyBeatmapSet> difficultyBeatmapSets)
         {
             levelID = previewLevel.levelID;
             songName = previewLevel.songName;
@@ -63,7 +63,7 @@ namespace OstBackport.Models
             songAudioClipPath = previewLevel.songAudioClipPath;
             CoverImagePath = previewLevel.CoverImagePath;
             _difficultyBeatmapSets = difficultyBeatmapSets;
-            CustomBeatmapLevelData = new BeatmapLevelData(song, difficultyBeatmapSets.ToList());
+            CustomBeatmapLevelData = new BeatmapLevelData(song, difficultyBeatmapSets);
         }
     }
 }

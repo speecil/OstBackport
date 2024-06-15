@@ -5,8 +5,7 @@ using Zenject;
 using static BeatmapLevelLoader;
 using System.IO;
 using System.Linq;
-using System;
-using Newtonsoft.Json;
+using System.Collections.Generic;
 using SiraUtil.Logging;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
@@ -30,8 +29,7 @@ namespace OstBackport.Services
             CustomOstPreviewBeatmapLevelSO levelSo = ScriptableObject.CreateInstance<CustomOstPreviewBeatmapLevelSO>();
             JsonUtility.FromJsonOverwrite(json, levelSo);
 
-            JArray difficultyBeatmapSets = JObject.Parse(json)["_difficultyBeatmapSets"].Value<JArray>();
-            CustomOstDifficultyBeatmapSet[] maps = JsonConvert.DeserializeObject<CustomOstDifficultyBeatmapSet[]>(difficultyBeatmapSets.ToString());
+            List<CustomOstDifficultyBeatmapSet> maps = JObject.Parse(json)["_difficultyBeatmapSets"].Value<JArray>().ToObject<List<CustomOstDifficultyBeatmapSet>>();
 
             levelSo._levelID = levelSo.songName.Replace(" ", "").Replace("-", "");
             levelSo._previewDifficultyBeatmapSets = new PreviewDifficultyBeatmapSet[1];
@@ -53,10 +51,8 @@ namespace OstBackport.Services
             string songDirectory = Path.GetDirectoryName(infoFile) ?? "";
 
             string json = File.ReadAllText(infoFile);
-            JObject infoObj = JObject.Parse(json);
 
-            JArray difficultyBeatmapSets = infoObj["_difficultyBeatmapSets"].Value<JArray>();
-            CustomOstDifficultyBeatmapSet[] maps = JsonConvert.DeserializeObject<CustomOstDifficultyBeatmapSet[]>(difficultyBeatmapSets.ToString());
+            List<CustomOstDifficultyBeatmapSet> maps = JObject.Parse(json)["_difficultyBeatmapSets"].Value<JArray>().ToObject<List<CustomOstDifficultyBeatmapSet>>();
 
             foreach (CustomOstDifficultyBeatmap beatmap in maps[0].beatmaps)
             {
@@ -65,7 +61,7 @@ namespace OstBackport.Services
                 beatmap.BeatmapData = customBeatmapData;
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            Array.Resize(ref maps, 1);
+
             AudioClip song = await SongCore.Loader._customLevelLoader._audioClipAsyncLoader.LoadPreview(previewLevel);
             CustomOstBeatmapLevel level = new CustomOstBeatmapLevel(previewLevel, song, maps);
             level.InitData();
